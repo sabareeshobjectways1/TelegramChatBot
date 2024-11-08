@@ -1,4 +1,4 @@
 # config.py
 
-BOT_TOKEN = "7774971373:AAFNyPr6mJwdqd3dNsqHfM2s8M0Q1vJe4Os"
+BOT_TOKEN = "7930660432:AAF2p5Ai07yVxiFdIYS2ES9-N8z7pxYZeY8"
 ADMIN_ID = "@uptimecoding"
