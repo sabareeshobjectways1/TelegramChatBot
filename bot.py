@@ -1,16 +1,20 @@
-import subprocess
 import sys
-
-# Ensure python-telegram-bot is installed
-subprocess.check_call([sys.executable, "-m", "pip", "install", "python-telegram-bot", "--upgrade"])
-
+import subprocess
 import logging
 from telegram import Update, ChatMember
-from telegram.ext import (filters, ApplicationBuilder, ContextTypes, CommandHandler, ConversationHandler,
-                          MessageHandler, ChatMemberHandler)
+from telegram.ext import (
+    filters, ApplicationBuilder, ContextTypes, CommandHandler,
+    ConversationHandler, MessageHandler, ChatMemberHandler
+)
 from UserStatus import UserStatus
 from config import BOT_TOKEN, ADMIN_ID
 import db_connection
+
+# Ensure `python-telegram-bot` is installed
+try:
+    import telegram
+except ImportError:
+    subprocess.check_call([sys.executable, "-m", "pip", "install", "--user", "python-telegram-bot", "--upgrade"])
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -188,8 +192,7 @@ if __name__ == '__main__':
                 CommandHandler("exit", handle_exit_chat),
                 CommandHandler("chat", handle_chat),
                 CommandHandler("newchat", exit_then_chat),
-                CommandHandler("stats", handle_stats)
-            ]
+                CommandHandler("stats", handle_stats)]
         },
         fallbacks=[MessageHandler(filters.ALL, handle_message)]
     )
