@@ -1,3 +1,9 @@
+import subprocess
+import sys
+
+# Ensure python-telegram-bot is installed
+subprocess.check_call([sys.executable, "-m", "pip", "install", "python-telegram-bot", "--upgrade"])
+
 import logging
 from telegram import Update, ChatMember
 from telegram.ext import (filters, ApplicationBuilder, ContextTypes, CommandHandler, ConversationHandler,
@@ -182,10 +188,11 @@ if __name__ == '__main__':
                 CommandHandler("exit", handle_exit_chat),
                 CommandHandler("chat", handle_chat),
                 CommandHandler("newchat", exit_then_chat),
-                CommandHandler("stats", handle_stats)]
+                CommandHandler("stats", handle_stats)
+            ]
         },
-        fallbacks=[MessageHandler(filters.TEXT, handle_not_in_chat)]
+        fallbacks=[MessageHandler(filters.ALL, handle_message)]
     )
+
     application.add_handler(conv_handler)
     application.run_polling()
-  
