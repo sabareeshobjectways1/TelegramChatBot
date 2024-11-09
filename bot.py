@@ -5,23 +5,10 @@ from telegram.ext import (filters, ApplicationBuilder, ContextTypes, CommandHand
 from UserStatus import UserStatus
 from config import BOT_TOKEN, ADMIN_ID
 import db_connection
-from flask import Flask
-import threading
-import os
-import asyncio
-from werkzeug.serving import run_simple
 
-# Initialize Flask app
-app = Flask(__name__)
-
-@app.route('/')
-def home():
-    return 'Bot is running!'
-
-# Setup logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.WARNING
+    level=logging.WARNING  # Set the logging level to: (DEBUG, INFO, WARNING, ERROR, CRITICAL)
 )
 
 """
@@ -177,7 +164,7 @@ async def blocked_bot_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 USER_ACTION = 0
 
-async def run_bot():
+if __name__ == '__main__':
     application = ApplicationBuilder().token(BOT_TOKEN).build()
     db_connection.create_db()
     db_connection.reset_users_status()
@@ -200,25 +187,5 @@ async def run_bot():
         fallbacks=[MessageHandler(filters.TEXT, handle_not_in_chat)]
     )
     application.add_handler(conv_handler)
-    await application.initialize()
-    await application.start()
-    await application.run_polling()
-
-def run_flask():
-    port = int(os.environ.get("PORT", 8000))
-    run_simple('0.0.0.0', port, app, use_reloader=False, use_debugger=False)
-
-def main():
-    # Create new event loop for the bot
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    
-    # Start Flask in a separate thread
-    flask_thread = threading.Thread(target=run_flask)
-    flask_thread.start()
-    
-    # Run the bot in the main thread
-    loop.run_until_complete(run_bot())
-
-if __name__ == '__main__':
-    main()
+    application.run_polling()
+  
