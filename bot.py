@@ -5,10 +5,21 @@ from telegram.ext import (filters, ApplicationBuilder, ContextTypes, CommandHand
 from UserStatus import UserStatus
 from config import BOT_TOKEN, ADMIN_ID
 import db_connection
+from flask import Flask
+import threading
+import os
 
+# Initialize Flask app
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return 'Bot is running!'
+
+# Setup logging
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    level=logging.WARNING  # Set the logging level to: (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    level=logging.WARNING
 )
 
 """
@@ -164,7 +175,7 @@ async def blocked_bot_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
 
 USER_ACTION = 0
 
-if __name__ == '__main__':
+def run_bot():
     application = ApplicationBuilder().token(BOT_TOKEN).build()
     db_connection.create_db()
     db_connection.reset_users_status()
@@ -188,4 +199,12 @@ if __name__ == '__main__':
     )
     application.add_handler(conv_handler)
     application.run_polling()
-  
+
+if __name__ == '__main__':
+    # Start the bot in a separate thread
+    bot_thread = threading.Thread(target=run_bot)
+    bot_thread.start()
+    
+    # Start the Flask server
+    port = int(os.environ.get("PORT", 8000))
+    app.run(host='0.0.0.0', port=port)
