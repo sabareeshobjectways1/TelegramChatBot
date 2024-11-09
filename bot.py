@@ -11,8 +11,12 @@ import db_connection
 import threading
 
 # Enable nested event loops if not already running
-if not asyncio.get_event_loop().is_running():
-    nest_asyncio.apply()
+# This line is moved inside the main thread to avoid issues with the script runner thread
+def enable_asyncio_in_thread():
+    try:
+        nest_asyncio.apply()
+    except RuntimeError:
+        pass  # If nest_asyncio has already been applied, ignore the error.
 
 # Configure logging
 logging.basicConfig(
@@ -186,12 +190,12 @@ class TelegramBot:
             user_id = update.effective_user.id
             user_status = db_connection.get_user_status(user_id=user_id)
             if user_status == UserStatus.COUPLED:
-                other_user = db_connection.get_partner_id(user_id)
-                db_connection.uncouple(user_id=user_id)
-                await context.bot.send_message(chat_id=user_id, text="You blocked the bot, exiting from the chat!")
-                await context.bot.send_message(chat_id=other_user, text="Your partner has blocked the bot, leaving the chat.")
+                other_user = db_connection.get_partner_id(user_id=user_id)
+                if other_user:
+                    await context.bot.send_message(chat_id=other_user, text="Your partner has blocked the bot, leaving the chat.")
+            db_connection.set_user_status(user_id=user_id, new_status=UserStatus.IDLE)
+            await context.bot.send_message(chat_id=user_id, text="You blocked the bot, exiting from the chat!")
         return
-        
 
 # Run the bot in a separate thread to allow Streamlit UI to function
 def run_bot():
@@ -199,6 +203,7 @@ def run_bot():
     asyncio.run(bot.start_bot())
 
 # Launch the bot in a separate thread
+enable_asyncio_in_thread()  # Apply nest_asyncio to prevent errors
 threading.Thread(target=run_bot, daemon=True).start()
 
 # Streamlit app content
