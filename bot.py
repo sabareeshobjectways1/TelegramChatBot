@@ -10,8 +10,9 @@ from config import BOT_TOKEN, ADMIN_ID
 import db_connection
 import threading
 
-# Enable nested event loops
-nest_asyncio.apply()
+# Enable nested event loops if not already running
+if not asyncio.get_event_loop().is_running():
+    nest_asyncio.apply()
 
 # Configure logging
 logging.basicConfig(
@@ -187,55 +188,19 @@ class TelegramBot:
             if user_status == UserStatus.COUPLED:
                 other_user = db_connection.get_partner_id(user_id)
                 db_connection.uncouple(user_id=user_id)
-                await context.bot.send_message(chat_id=other_user, text="🤖 Your partner has left the chat, type /chat to start searching for a new partner.")
-            db_connection.remove_user(user_id=user_id)
-            return ConversationHandler.END
-        else:
-            return USER_ACTION
+                await context.bot.send_message(chat_id=user_id, text="You blocked the bot, exiting from the chat!")
+                await context.bot.send_message(chat_id=other_user, text="Your partner has blocked the bot, leaving the chat.")
+        return
+        
 
-def is_bot_blocked_by_user(update: Update) -> bool:
-    new_member_status = update.my_chat_member.new_chat_member.status
-    old_member_status = update.my_chat_member.old_chat_member.status
-    return new_member_status == ChatMember.BANNED and old_member_status == ChatMember.MEMBER
-
-USER_ACTION = 0
-
+# Run the bot in a separate thread to allow Streamlit UI to function
 def run_bot():
     bot = TelegramBot()
     asyncio.run(bot.start_bot())
 
-def main():
-    st.title("Telegram Chat Bot")
-    st.write("Bot Status: Running")
-    
-    if 'bot_thread' not in st.session_state:
-        st.session_state.bot_thread = None
-        st.session_state.bot_running = False
-    
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        if st.button("Start Bot") and not st.session_state.bot_running:
-            st.session_state.bot_thread = threading.Thread(target=run_bot)
-            st.session_state.bot_thread.start()
-            st.session_state.bot_running = True
-            st.success("Bot started successfully!")
-    
-    with col2:
-        if st.button("Stop Bot") and st.session_state.bot_running:
-            if st.session_state.bot_thread:
-                st.session_state.bot_running = False
-                st.session_state.bot_thread.join()
-                st.success("Bot stopped successfully!")
+# Launch the bot in a separate thread
+threading.Thread(target=run_bot, daemon=True).start()
 
-    st.sidebar.header("Bot Statistics")
-    if st.session_state.bot_running:
-        try:
-            total_users, paired_users = db_connection.retrieve_users_number()
-            st.sidebar.metric("Total Users", total_users)
-            st.sidebar.metric("Paired Users", paired_users)
-        except Exception as e:
-            st.sidebar.error(f"Error fetching statistics: {str(e)}")
-
-if __name__ == "__main__":
-    main()
+# Streamlit app content
+st.title('Streamlit & Telegram Bot Integration')
+st.write("This app demonstrates running a Telegram bot alongside a Streamlit app.")
