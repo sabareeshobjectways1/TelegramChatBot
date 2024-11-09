@@ -1,10 +1,24 @@
 import logging
+import os
 from telegram import Update, ChatMember
 from telegram.ext import (filters, ApplicationBuilder, ContextTypes, CommandHandler, ConversationHandler,
                           MessageHandler, ChatMemberHandler)
 from UserStatus import UserStatus
 from config import BOT_TOKEN, ADMIN_ID
 import db_connection
+from flask import Flask, Response
+from threading import Thread
+
+app = Flask(__name__)
+
+@app.route('/')
+def home():
+    return Response('Bot is running!', status=200)
+
+def run_flask():
+    # Get port from environment variable or default to 8080
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port)
 
 logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -165,6 +179,10 @@ async def blocked_bot_handler(update: Update, context: ContextTypes.DEFAULT_TYPE
 USER_ACTION = 0
 
 if __name__ == '__main__':
+    # Start Flask server in a separate thread
+    flask_thread = Thread(target=run_flask)
+    flask_thread.start()
+
     application = ApplicationBuilder().token(BOT_TOKEN).build()
     db_connection.create_db()
     db_connection.reset_users_status()
@@ -188,4 +206,3 @@ if __name__ == '__main__':
     )
     application.add_handler(conv_handler)
     application.run_polling()
-  
